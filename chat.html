@@ -1,4 +1,108 @@
+<!-- chat.html -->
 <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Room</title>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js"></script>
+</head>
+<body>
+  <div id="room-name"></div>
+  <div id="room-timer"></div>
+  <div id="messages"></div>
+  <input type="text" id="message-input" placeholder="Enter your message" />
+  <button id="send-button">Send</button>
+
+  <script>
+    // Firebase initialization
+    const firebaseConfig = {
+        apiKey: "AIzaSyCTPbmDnhuW0bYczt7_uGLSCu2clGWCpTw",
+        authDomain: "anochat-0359.firebaseapp.com",
+        databaseURL: "https://anochat-0359-default-rtdb.firebaseio.com",
+        projectId: "anochat-0359",
+        storageBucket: "anochat-0359.appspot.com",
+        messagingSenderId: "102386269637",
+        appId: "1:102386269637:web:60729f73f8b39d62ce1fac",
+        measurementId: "G-Y1336VJQCC"    
+    };
+    const app = firebase.initializeApp(firebaseConfig);
+    const database = firebase.database(app);
+
+    // Extract room ID and duration from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomId = urlParams.get('room');
+    const roomDuration = parseInt(urlParams.get('duration')) * 60 * 1000; // Convert to milliseconds
+
+    // Display the room ID on the page
+    const roomNameElement = document.getElementById('room-name');
+    roomNameElement.textContent = `Room: ${roomId}`;
+
+    // Firebase references
+    const messagesRef = firebase.database().ref(`rooms/${roomId}/messages`);
+
+    // Timer logic for room expiry
+    const roomTimerElement = document.getElementById('room-timer');
+    let roomExpirationTime = Date.now() + roomDuration;
+
+    const countdownInterval = setInterval(() => {
+      const remainingTime = roomExpirationTime - Date.now();
+      if (remainingTime <= 0) {
+        clearInterval(countdownInterval);
+        roomTimerElement.textContent = "Room has expired.";
+      } else {
+        roomTimerElement.textContent = `Time remaining: ${Math.floor(remainingTime / 1000 / 60)} min`;
+      }
+    }, 1000);
+
+    // Send message functionality
+    const messageInput = document.getElementById('message-input');
+    const sendButton = document.getElementById('send-button');
+
+    const sendMessage = () => {
+      const message = messageInput.value.trim();
+      if (message) {
+        const ipAddress = 'user-ip-address'; // Replace with actual logic for getting user IP
+        firebase.database().ref(`rooms/${roomId}/messages`).push({
+          content: message,
+          sender: ipAddress,
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+        messageInput.value = ''; // Clear input field
+      }
+    };
+
+    sendButton.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    });
+
+    // Display incoming messages
+    firebase.database().ref(`rooms/${roomId}/messages`).on('child_added', (snapshot) => {
+      const message = snapshot.val();
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message';
+      messageDiv.textContent = `${message.sender}: ${message.content}`;
+      document.getElementById('messages').appendChild(messageDiv);
+
+      // Auto-delete the message after 1 minute
+      setTimeout(() => {
+        messageDiv.style.display = 'none'; // Hide message after 1 minute
+      }, 1 * 60 * 1000);
+    });
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -20,11 +124,9 @@
       <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
       <button class="c-button" id="send-button">Send</button>
       <input type="file" id="file-input" style="display: none;">
-      <button class="c-button" id="file-button">📎</button> <!-- File button -->
+      <button class="c-button" id="file-button">📎</button>
     </footer>
   </div>
-
-  <!-- Add type="module" to the script tag -->
   <script type="module" src="chat.js"></script>
 </body>
-</html>
+</html> -->

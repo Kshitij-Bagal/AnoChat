@@ -44,23 +44,31 @@ countAndDeleteInactiveRooms();
 // Set an interval to periodically check for inactive rooms and delete them
 setInterval(countAndDeleteInactiveRooms, 30000); // Updates every 30 seconds
 
-// Create a new room and store creation time in Firebase
 const createRoomButton = document.getElementById("create-room");
+
 createRoomButton.addEventListener("click", () => {
-  const roomId = generateRoomId();  // You can create a unique room ID
+  const roomId = generateRoomId();  // Generate a unique room ID (you can customize this logic)
   const roomDuration = prompt("Enter room duration (in minutes):");
 
+  // Reference to Firebase database for the new room
   const roomRef = ref(database, `rooms/${roomId}`);
+  
+  // Create room data
   const roomData = {
     createdAt: Date.now(), // Store the room's creation time
     duration: parseInt(roomDuration) * 60 * 1000, // Convert to milliseconds
-    active: true,
+    active: true, // Room is active by default
   };
 
   // Push new room data into Firebase
   set(roomRef, roomData).then(() => {
     alert(`Room created! Room ID: ${roomId}`);
+
+    // Redirect to the dynamic chat page with the roomId and duration as URL parameters
     window.location.href = `/chat.html?room=${roomId}&duration=${roomDuration}`;
+  }).catch(error => {
+    console.error("Error creating room:", error);
+    alert("Failed to create room. Please try again.");
   });
 });
 

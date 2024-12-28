@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anonymous Chat</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <header class="chat-header">
+      <h2 id="room-name">Room: Loading...</h2>
+    </header>
+    <div id="chat-window">
+      <div id="messages"></div>
+    </div>
+    <footer class="chat-footer">
+      <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
+      <button id="send-button">Send</button>
+      <input type="file" id="file-input" style="display: none;">
+      <button id="file-button">📎</button>
+    </footer>
+  </div>
+
+  <!-- Add type="module" here -->
+  <script type="module" src="chat.js"></script>
+</body>
+</html>

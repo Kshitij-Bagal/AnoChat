@@ -1,182 +1,200 @@
-// import { ref, push, onChildAdded, remove, serverTimestamp, update, get } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
-// import { database } from "./firebase.js";
+import { database, storage } from './firebase.js'; // Import Firebase database and storage
+import { ref, push, onChildAdded, serverTimestamp, update, remove } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+import { getDownloadURL, ref as storageRef, uploadBytes } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-storage.js";
 
-// // Get room ID and duration from URL parameters
-// const urlParams = new URLSearchParams(window.location.search);
-// const roomId = urlParams.get("room");
-// const roomDuration = parseInt(urlParams.get("duration")) * 60 * 1000;  // Convert to milliseconds
+// Function to create the chat overlay dynamically when creating a room
+// Function to create the chat overlay dynamically when creating a room
+export function createChatOverlay(roomId, roomDurationInMinutes) {
+    if (document.getElementById("chat-overlay")) return;
+  
+    const overlay = document.createElement("div");
+    overlay.id = "chat-overlay";
+    overlay.className = "overlay";
+  
+    // Convert the given duration from minutes to seconds
+    let roomDurationInSeconds = roomDurationInMinutes * 60;
+  
+    overlay.innerHTML = `
+      <div id="chat-container">
+        <div id="room-header">
+          <h3 id="room-title">Room: ${roomId}</h3>
+          <div id="room-timer">${formatTime(roomDurationInSeconds)}</div>
+          <button id="close-room-button">Close Room</button>
+        </div>
+        <div id="messages-container"></div>
+        <div id="message-controls">
+          <input id="message-input" type="text" placeholder="Type a message">
+          <button class='c-button' id="send-message">Send</button>
+          <button class='c-button' id="send-file">File</button>
+          <input type="file" id="file-input" style="display:none">
+        </div>
+      </div>
+    `;
+  
+    document.body.appendChild(overlay);
+    initializeChat(roomId, roomDurationInSeconds);
+  
+    // Start the countdown timer and update the display
+    let timerInterval = setInterval(() => {
+      if (roomDurationInSeconds > 0) {
+        roomDurationInSeconds--;
+        document.getElementById("room-timer").textContent = formatTime(roomDurationInSeconds);
+        updateRoomDuration(roomId, roomDurationInSeconds);
+      } else {
+        clearInterval(timerInterval);
+        alert("Room time expired!");
+        removeRoomFromDatabase(roomId);  // Automatically remove the room from Firebase when expired
+        overlay.remove();
+      }
+    }, 1000); // Update every second (1,000ms)
+  
+    // Retrieve and check if the room exists in Firebase
+    const roomRef = ref(database, `rooms/${roomId}`);
+    onChildAdded(roomRef, (snapshot) => {
+      if (!snapshot.exists()) {
+        alert("Room does not exist!");
+        overlay.remove();
+      } else {
+        // Room exists, allow the user to join
+        const roomData = snapshot.val();
+        if (roomData.active === false) {
+          alert("This room has expired.");
+          overlay.remove();
+        }
+      }
+    });
+  
+    document.getElementById("close-room-button").addEventListener("click", () => {
+      clearInterval(timerInterval); // Stop the countdown when the room is closed
+      overlay.remove();
+    });
+  }
+  
+  // Helper function to format the remaining time in minutes and seconds
+  function formatTime(durationInSeconds) {
+    const minutes = Math.floor(durationInSeconds / 60);
+    const seconds = durationInSeconds % 60;
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  }
+  
+  // Function to update the room's remaining time in Firebase
+  function updateRoomDuration(roomId, roomDurationInSeconds) {
+    const roomRef = ref(database, `rooms/${roomId}`);
+    update(roomRef, {
+      duration: roomDurationInSeconds
+    });
+  }
+  
+  // Function to remove the room from Firebase when expired
+  function removeRoomFromDatabase(roomId) {
+    const roomRef = ref(database, `rooms/${roomId}`);
+    remove(roomRef);
+  }
+  
 
-// // UI Elements
-// const messagesContainer = document.getElementById("messages");
-// const messageInput = document.getElementById("message-input");
-// const sendButton = document.getElementById("send-button");
-// const fileButton = document.getElementById("file-button");
-// const fileInput = document.getElementById("file-input");
-// const closeRoomButton = document.getElementById("close-room");
-// const roomNameElement = document.getElementById("room-name");
-// const roomTimerElement = document.getElementById("room-timer");
+// Function to initialize chat in both create and join cases
+function initializeChat(roomId, roomDurationInSeconds) {
+  const messagesContainer = document.getElementById("messages-container");
+  const messageInput = document.getElementById("message-input");
+  const sendButton = document.getElementById("send-message");
+  const fileButton = document.getElementById("send-file");
+  const fileInput = document.getElementById("file-input");
 
-// roomNameElement.textContent = `Room: ${roomId}`;
+  // Reference to the Firebase messages for the specific room
+  const messagesRef = ref(database, `rooms/${roomId}/messages`);
 
-// // Database References
-// const messagesRef = ref(database, `rooms/${roomId}/messages`);
-// const roomRef = ref(database, `rooms/${roomId}`);
+  // Listen for new messages in the room
+  onChildAdded(messagesRef, (snapshot) => {
+    const message = snapshot.val();
+    renderMessage(snapshot.key, message);
+  });
 
-// // Function to get the user's IP address
-// async function getUserIP() {
-//   try {
-//     const response = await fetch('https://api.ipify.org?format=json');
-//     const data = await response.json();
-//     return data.ip;  // Return the user's IP address
-//   } catch (error) {
-//     console.error("Error fetching IP address:", error);
-//     return "unknown";
-//   }
-// }
+  // Function to render the received message
+  function renderMessage(key, message) {
+    const messageDiv = document.createElement("div");
+    messageDiv.className = "message";
+    messageDiv.id = `message-${key}`;
 
-// // Timer for room expiry
-// let roomExpirationTime = Date.now() + roomDuration; // Expiration time based on roomDuration
-// localStorage.setItem('roomExpirationTime', roomExpirationTime); // Store the expiration time in localStorage
+    if (message.type === "text") {
+      messageDiv.textContent = `${message.sender}: ${message.content}`;
+    } else if (message.type === "file") {
+      const link = document.createElement("a");
+      link.href = message.content;
+      link.textContent = `Download ${message.filename}`;
+      messageDiv.appendChild(link);
+    }
 
-// // Function to handle room expiration
-// function handleRoomExpiration() {
-//   if (Date.now() >= roomExpirationTime) {
-//     update(roomRef, { active: false }).then(() => {
-//       alert("This room has expired and is now closed.");
-//       window.location.href = "/"; // Redirect to homepage
-//     }).catch((error) => {
-//       console.error("Error marking room as inactive:", error);
-//     });
-//   }
-// }
+    const timestampDiv = document.createElement("div");
+    timestampDiv.className = "timestamp";
+    timestampDiv.textContent = new Date(message.timestamp).toLocaleTimeString();
+    messageDiv.appendChild(timestampDiv);
 
-// // Display countdown timer
-// function displayRoomTimer() {
-//   const countdownInterval = setInterval(() => {
-//     const remainingTime = roomExpirationTime - Date.now();
+    // Add delete button for the message
+    const deleteButton = document.createElement("button");
+    deleteButton.textContent = "Delete";
+    deleteButton.addEventListener("click", () => {
+      removeMessageFromDatabase(key);  // Remove from Firebase
+      messageDiv.remove();  // Remove from DOM
+    });
 
-//     if (remainingTime <= 0) {
-//       clearInterval(countdownInterval);
-//       roomTimerElement.textContent = "Room has expired.";
-//       handleRoomExpiration(); // Mark room as expired if the time is over
-//     } else {
-//       const minutesLeft = Math.floor(remainingTime / 1000 / 60);
-//       const secondsLeft = Math.floor((remainingTime / 1000) % 60);
-//       roomTimerElement.textContent = `Time remaining: ${minutesLeft} min ${secondsLeft} sec`;
-//     }
-//   }, 1000);
-// }
+    messageDiv.appendChild(deleteButton);
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-// displayRoomTimer(); // Start the countdown timer
+    // Auto-remove message after 1 minute
+    setTimeout(() => {
+      const messageElement = document.getElementById(`message-${key}`);
+      if (messageElement) {
+        messageElement.remove();
+        removeMessageFromDatabase(key); // Ensure message is also removed from Firebase
+      }
+    }, 60000);
+  }
 
-// // Send message function
-// const sendMessage = async () => {
-//   const message = messageInput.value.trim();
-//   if (message) {
-//     const ipAddress = await getUserIP();  // Get the user's IP address
+  // Function to remove message from Firebase
+  function removeMessageFromDatabase(messageKey) {
+    const messageRef = ref(database, `rooms/${roomId}/messages/${messageKey}`);
+    remove(messageRef);
+  }
 
-//     // Push message to Firebase
-//     const messageRef = push(messagesRef, {
-//       content: message,
-//       type: "text",
-//       sender: ipAddress,  // Store IP address instead of "user"
-//       timestamp: serverTimestamp()
-//     });
-//     messageInput.value = "";
+  // Function to send message when the user clicks the Send button
+  sendButton.addEventListener("click", () => {
+    const message = messageInput.value.trim();
 
-//     // Set a timer for the message to hide and delete it after 1 minute
-//     setTimeout(() => {
-//       const messageElement = document.getElementById(`message-${messageRef.key}`);
-//       if (messageElement) {
-//         messageElement.style.display = 'none'; // Hide the message
-//         messageElement.remove(); // Completely remove the message element from DOM
-//       }
-//     }, 1 * 60 * 1000); // Message will disappear and be removed after 1 minute
-//   }
-// };
+    if (message) {
+      push(messagesRef, {
+        content: message,
+        type: "text",
+        sender: "Anonymous", // Replace with actual sender info if needed
+        timestamp: serverTimestamp(),
+      });
 
-// // Send message on button click or Enter key press
-// sendButton.addEventListener("click", sendMessage);
-// messageInput.addEventListener("keydown", (e) => {
-//   if (e.key === "Enter") {
-//     sendMessage();
-//   }
-// });
+      messageInput.value = ''; // Clear the input field
+    }
+  });
 
-// // File Upload functionality
-// fileButton.addEventListener("click", () => fileInput.click());
-// fileInput.addEventListener("change", async (event) => {
-//   const file = event.target.files[0];
-//   if (file) {
-//     const ipAddress = await getUserIP();  // Get the user's IP address
-//     const reader = new FileReader();
-//     reader.onload = () => {
-//       const base64 = reader.result;
-//       push(messagesRef, {
-//         content: base64,
-//         type: "file",
-//         filename: file.name,
-//         sender: ipAddress,  // Store IP address instead of "user"
-//         timestamp: serverTimestamp()
-//       });
-//     };
-//     reader.readAsDataURL(file);
-//   }
-// });
+  // Handle file upload
+  fileButton.addEventListener("click", () => {
+    fileInput.click(); // Trigger file input click
+  });
 
-// // Listen for new messages and re-render after refresh
-// onChildAdded(messagesRef, (snapshot) => {
-//   const message = snapshot.val();
-//   const messageDiv = document.createElement("div");
-//   messageDiv.className = "message";
-//   messageDiv.id = `message-${snapshot.key}`; // Assign unique ID to each message
-
-//   if (message.sender !== "unknown") {  // Don't display messages from unknown IPs
-//     if (message.sender === "user") {
-//       messageDiv.classList.add("sent");
-//     } else {
-//       messageDiv.classList.add("received");
-//     }
-
-//     if (message.type === "text") {
-//       messageDiv.textContent = message.content;
-//     } else if (message.type === "file") {
-//       const link = document.createElement("a");
-//       link.href = message.content;
-//       link.textContent = `Download ${message.filename}`;
-//       messageDiv.appendChild(link);
-//     }
-
-//     // Add timestamp to the message
-//     const timestampDiv = document.createElement("div");
-//     timestampDiv.className = "timestamp";
-//     const timestamp = new Date(message.timestamp);
-//     timestampDiv.textContent = timestamp.toLocaleTimeString();
-//     messageDiv.appendChild(timestampDiv);
-
-//     messagesContainer.appendChild(messageDiv);
-//     messagesContainer.scrollTop = messagesContainer.scrollHeight;
-
-//     // Auto-delete message after 1 minute (as well as hiding it)
-//     setTimeout(() => {
-//       const messageElement = document.getElementById(`message-${snapshot.key}`);
-//       if (messageElement) {
-//         messageElement.style.display = 'none'; // Hide the message
-//         messageElement.remove(); // Completely remove the message element from DOM
-//       }
-//     }, 0.5 * 60 * 1000); // Set to 1 minute
-//   }
-// });
-
-// // Close Room functionality
-// closeRoomButton.addEventListener("click", () => {
-//   const confirmation = confirm("Are you sure you want to close this room?");
-//   if (confirmation) {
-//     update(roomRef, { active: false }).then(() => {
-//       alert("Room closed.");
-//       window.location.href = "/"; // Redirect to homepage
-//     }).catch((error) => {
-//       alert("Error closing the room: " + error.message);
-//     });
-//   }
-// });
+  fileInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Upload the file to Firebase storage and get the URL
+      const fileRef = storageRef(storage, `files/${file.name}`);
+      uploadBytes(fileRef, file).then((snapshot) => {
+        getDownloadURL(snapshot.ref).then((url) => {
+          // Store the file URL in Firebase Realtime Database
+          push(messagesRef, {
+            content: url,
+            type: "file",
+            sender: "Anonymous", // Replace with real sender
+            filename: file.name,
+            timestamp: serverTimestamp(),
+          });
+        });
+      });
+    }
+  });
+}

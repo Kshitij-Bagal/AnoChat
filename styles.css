@@ -9,6 +9,7 @@ body {
   font-family: 'Arial', sans-serif;
   background-color: #f7f7f7;
   color: #333;
+  height:fit-content;
 }
 
 /* Main Page Styles */
@@ -105,7 +106,7 @@ button:active {
 }
 
 /* Footer Styling for Main Page */
-#footer {
+footer {
   position: relative;
   bottom: 0;
   width: 100%;
@@ -115,131 +116,117 @@ button:active {
   text-align: center;
 }
 
-#footer p {
+footer p {
   font-size: 0.9em;
   color: #aaa;
 }
-
-/* Chat Interface Styles */
-#app {
-  max-width: 500px;
-  margin: 50px auto;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-  height: 600px;
+.c-button{
+  width: 120px ;
+  height: 60px;
+  font-size: 20px;
 }
 
-.chat-header {
+#chat-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); /* Center the overlay */
+  width: 800px; /* Fixed width */
+  height: 80%; /* Fixed height with some space left */
+  max-height: 100%; /* Ensure it doesn't exceed the viewport height */
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center; /* Center content horizontally */
+  align-items: center; /* Center content vertically */
+  z-index: 1000;
+  border-radius: 8px;
+}
+
+#chat-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 8px;
+}
+
+#room-header {
   background: #075e54;
   color: white;
   padding: 10px;
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   border-radius: 8px 8px 0 0;
 }
 
-#chat-window {
+#room-title {
+  font-size: 1.2em;
+  margin: 0;
+}
+
+#room-timer {
+  font-size: 1em;
+}
+
+#close-room-button {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+#close-room-button:hover {
+  background-color: #d32f2f;
+}
+
+#messages-container {
   flex: 1;
-  padding: 10px;
+  padding: 15px;
   overflow-y: auto;
-  border-top: 1px solid #ddd;
+  background-color: #f4f4f4;
   border-bottom: 1px solid #ddd;
 }
 
-#messages {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.message {
-  padding: 10px;
-  border-radius: 8px;
-  max-width: 80%;
-  word-wrap: break-word;
-}
-
-.message.sent {
-  background: #dcf8c6;
-  align-self: flex-end;
-  margin-right: 10px;
-}
-
-.message.received {
-  background: #ffffff;
-  align-self: flex-start;
-  margin-left: 10px;
-  border: 1px solid #ddd;
-}
-
-.message .timestamp {
-  font-size: 0.9em;
-  color: #888;
-  text-align: right;
-  margin-top: 5px;
-}
-
-.c-button{
-  width: 100px;
-  height: 60px;
-}
-
-.chat-footer {
+#message-controls {
   display: flex;
   padding: 10px;
+  background: #f0f0f0;
   border-radius: 0 0 8px 8px;
-  background: #f9f9f9;
 }
 
 #message-input {
   flex: 1;
   padding: 10px;
-  border: 1px solid #ddd;
   border-radius: 4px;
 }
 
-#send-button, #file-button {
-  background: #25d366;
+.c-button {
+  padding: 10px;
+  margin-left: 10px;
+  background-color: #25d366;
   color: white;
   border: none;
   border-radius: 4px;
-  padding: 10px 20px;
-  margin-left: 10px;
   cursor: pointer;
-  transition: background 0.3s;
 }
 
-#send-button:hover, #file-button:hover {
-  background: #1db554;
+.c-button:hover {
+  background-color: #1db554;
 }
 
-/* Live counter for active rooms */
-#active-rooms {
-  font-size: 1.2em;
-  margin: 20px 0;
-  color: #333;
+#send-file {
+  background-color: #4CAF50;
 }
 
-#room-timer {
-  font-size: 1.1em;
-  color: #ff5555;
-  margin-left: 10px;
-  font-weight: bold;
+#send-file:hover {
+  background-color: #45a049;
 }
 
-/* Delete room button */
-#delete-room-button {
-  background-color: #f44336;
-  color: white;
-  padding: 10px 15px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-  margin-left: 15px;
-}
-
-#delete-room-button:hover {
-  background-color: #d32f2f;
+#file-input {
+  display: none; /* Hide the file input element */
 }

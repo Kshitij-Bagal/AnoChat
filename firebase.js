@@ -1,6 +1,7 @@
 // Import the functions you need from the Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
 import { getDatabase } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+import { getStorage } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-storage.js";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -19,3 +20,4 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase Realtime Database and export it
 export const database = getDatabase(app);
+export const storage = getStorage(app);

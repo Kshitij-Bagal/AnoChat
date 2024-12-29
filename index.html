@@ -3,49 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Anonymous Chat - Home</title>
+  <title>AnoChat - Chat Room</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div id="home-container">
-    <h1>Welcome to Anonymous Chat</h1>
-    <p>Your private space for anonymous conversations. No sign-up required, just connect and chat.</p>
-    
-    <div id="active-rooms">
-      <h3>Active Rooms: <span id="room-count">Loading...</span></h3>
-    </div>
-    
-    <!-- Features section -->
+    <h1>Welcome to AnoChat</h1>
+    <p>Create a chat room and start chatting anonymously!</p>
     <div id="features">
-      <h2>Why Choose Us?</h2>
+      <h2>Features</h2>
       <ul>
-        <li><strong>Instant Messaging:</strong> Real-time, anonymous chatting with no registration.</li>
-        <li><strong>Secure Conversations:</strong> Your chats are deleted after 5 minutes.</li>
-        <li><strong>Privacy Focused:</strong> We don’t store your personal data. Your privacy is our priority.</li>
-        <li><strong>Room Creation:</strong> Easily create or join rooms with a simple link.</li>
+        <li><strong>Anonymous chatting</strong> with no personal details required.</li>
+        <li><strong>Message timer</strong> that deletes messages after a set time.</li>
+        <li><strong>File sharing</strong> and more!</li>
       </ul>
     </div>
 
-    <!-- Call to Action -->
-    <div id="room-creation">
+    <div class="action-buttons">
+      <input type="number" id="room-duration" placeholder="Duration in minutes" min="1">
       <button id="create-room">Create Room</button>
-      <br>
-      <!-- <label for="room-duration">Set Room Duration (in minutes):</label>
-      <input type="number" id="room-duration" min="1" placeholder="Enter duration in minutes"> -->
-    </div>
-
-    <!-- Join Room -->
-    <div>
-      <input type="text" id="join-room-input" placeholder="Enter Room ID to Join" autocomplete="off">
-      <button id="join-room">Join Room</button>
-    </div>
+      <input type="text" id="room-id" placeholder="Enter Room ID">
+      <button id="join-room">Join Room</button>    </div>
   </div>
+<footer>
+  <p>&copy; 2024 AnoChat | All Rights Reserved</p>
+</footer>
 
-  <!-- Footer -->
-  <footer id="footer">
-    <p>&copy; 2024 KB-DEV. All rights reserved.</p>
-  </footer>
-
+  <script type="module"  src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
+  <script type="module"  src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js"></script>
   <script type="module" src="home.js"></script>
+  <script type="module" src="chat.js"></script>
+  <script type="module" src="firebase.js"></script>
 </body>
 </html>

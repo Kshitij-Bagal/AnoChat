@@ -1,5 +1,5 @@
 
-// home.js
+//home.js
 import { database } from './firebase.js';
 import { ref, set, get, remove } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
 import { createChatOverlay } from './chat.js';
@@ -15,12 +15,14 @@ function generateRoomId() {
 }
 
 // Function to create a room in Firebase and add its details (including expiration time)
-function createRoomInDatabase(roomId, roomDuration) {
+function createRoomInDatabase(roomId, roomDuration, roomType, password = null) {
   const roomRef = ref(database, 'rooms/' + roomId);
   set(roomRef, {
     roomId: roomId,
     duration: roomDuration,
-    createdAt: Date.now()
+    createdAt: Date.now(),
+    type: roomType,
+    password: roomType === "private" ? password : null
   }).then(() => {
     console.log("Room created successfully");
   }).catch((error) => {
@@ -54,14 +56,68 @@ setInterval(checkAndDeleteExpiredRooms, 60000); // Every minute
 
 // Event listener to create a room when the "Create Room" button is clicked
 document.getElementById("create-room").addEventListener("click", () => {
+  const roomType = document.getElementById("room-type").value;
   const roomDuration = parseInt(document.getElementById("room-duration").value.trim()); // Get room duration (in minutes)
 
   if (roomDuration > 0) {
-    const roomId = generateRoomId(); // Generate a random room ID
-    createRoomInDatabase(roomId, roomDuration); // Store room details in Firebase
-    createChatOverlay(roomId, roomDuration); // Call to create the overlay and start the chat
+    if (roomType === "public") {
+      const publicRoomName = document.getElementById("public-room-name").value.trim();
+      if (publicRoomName) {
+        // Check if the room name already exists
+        const roomRef = ref(database, `rooms/${publicRoomName}`);
+        get(roomRef).then((snapshot) => {
+          if (snapshot.exists()) {
+            alert("A public room with this name already exists. Please choose a different name.");
+          } else {
+            createRoomInDatabase(publicRoomName, roomDuration, "public");
+            createChatOverlay(publicRoomName, roomDuration); // Start the chat
+          }
+        });
+      } else {
+        alert("Please enter a valid room name.");
+      }
+    } else if (roomType === "private") {
+      const roomId = generateRoomId(); // Generate a random room ID
+      const password = document.getElementById("private-room-password").value.trim();
+      if (password) {
+        createRoomInDatabase(roomId, roomDuration, "private", password);
+        createChatOverlay(roomId, roomDuration); // Start the chat
+      } else {
+        alert("Please enter a password for the private room.");
+      }
+    }
   } else {
     alert("Please enter a valid room duration.");
+  }
+});
+
+// Event listener to join a room when the "Join Room" button is clicked
+document.getElementById("join-room-button").addEventListener("click", () => {
+  const roomIdOrName = document.getElementById("join-room-id").value.trim();
+
+  if (roomIdOrName) {
+    const roomRef = ref(database, `rooms/${roomIdOrName}`);
+    get(roomRef).then((snapshot) => {
+      if (snapshot.exists()) {
+        const room = snapshot.val();
+        if (room.type === "private") {
+          const password = prompt("This is a private room. Please enter the password:");
+          if (password === room.password) {
+            createChatOverlay(room.roomId, room.duration); // Join the private chat
+          } else {
+            alert("Incorrect password. Access denied.");
+          }
+        } else {
+          createChatOverlay(room.roomId, room.duration); // Join the public chat
+        }
+      } else {
+        alert("Room not found or has expired.");
+      }
+    }).catch((error) => {
+      console.error("Error joining room:", error);
+    });
+  } else {
+    alert("Please enter a valid Room ID or Name.");
   }
 });
 

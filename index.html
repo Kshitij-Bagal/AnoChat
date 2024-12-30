@@ -8,6 +8,7 @@
 </head>
 <body>
   <div id="home-container">
+    <header>
     <h1>Welcome to AnoChat</h1>
     <p>Create a chat room and start chatting anonymously!</p>
     <div id="features">
@@ -18,19 +19,48 @@
         <li><strong>File sharing</strong> and more!</li>
       </ul>
     </div>
+  </header>
 
-    <div class="action-buttons">
-      <input type="number" id="room-duration" placeholder="Duration in minutes" min="1">
-      <button id="create-room">Create Room</button>
-      <input type="text" id="room-id" placeholder="Enter Room ID">
-      <button id="join-room">Join Room</button>    </div>
+    <main>
+      <section id="room-creation">
+          <h2>Create a Room</h2>
+          <form id="room-form">
+              <label>
+                  Room Type:
+                  <select id="room-type">
+                      <option value="public">Public</option>
+                      <option value="private">Private</option>
+                  </select>
+              </label>
+              <div id="public-room-input" style="display: none;">
+                  <label>Public Room Name: <input type="text" id="public-room-name" placeholder="Enter room name"></label>
+              </div>
+              <div id="private-room-input" style="display: none;">
+                  <label>Password: <input type="password" id="private-room-password" placeholder="Enter password"></label>
+              </div>
+              <button id="create-room" type="submit">Create Room</button>
+          </form>
+          <p id="error-message" style="color: red;"></p>
+      </section>
+      
+      <section id="join-room">
+          <h2>Join a Room</h2>
+          <form id="join-room-form">
+              <label>
+                  Room ID/Name:
+                  <input type="text" id="join-room-id" placeholder="Enter Room ID or Name">
+              </label>
+              <button id="join-room-button" type="submit">Join Room</button>
+          </form>
+      </section>
+  </main>
   </div>
-<footer>
-  <p>&copy; 2024 AnoChat | All Rights Reserved</p>
-</footer>
-
-  <script type="module"  src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
-  <script type="module"  src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js"></script>
+  <footer>
+      <p>&copy; 2024 AnoChat | All Rights Reserved</p>
+  </footer>
+  
+  <script type="module" src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js"></script>
   <script type="module" src="home.js"></script>
   <script type="module" src="chat.js"></script>
   <script type="module" src="firebase.js"></script>

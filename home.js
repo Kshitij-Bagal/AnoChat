@@ -17,105 +17,126 @@ function generateRoomId() {
 // Function to create a room in Firebase and add its details (including expiration time)
 function createRoomInDatabase(roomId, roomDuration, roomType, password = null) {
   const roomRef = ref(database, 'rooms/' + roomId);
-  set(roomRef, {
+  return set(roomRef, {
     roomId: roomId,
     duration: roomDuration,
     createdAt: Date.now(),
     type: roomType,
     password: roomType === "private" ? password : null
-  }).then(() => {
-    console.log("Room created successfully");
-  }).catch((error) => {
-    console.error("Error creating room:", error);
   });
 }
 
 // Function to check and delete expired rooms
 function checkAndDeleteExpiredRooms() {
   const roomsRef = ref(database, 'rooms/');
-  get(roomsRef).then((snapshot) => {
-    if (snapshot.exists()) {
-      const rooms = snapshot.val();
-      Object.keys(rooms).forEach(roomId => {
-        const room = rooms[roomId];
-        const roomCreationTime = room.createdAt;
-        const roomDuration = room.duration;
+  get(roomsRef)
+    .then((snapshot) => {
+      if (snapshot.exists()) {
+        const rooms = snapshot.val();
+        Object.keys(rooms).forEach((roomId) => {
+          const room = rooms[roomId];
+          const roomCreationTime = room.createdAt;
+          const roomDuration = room.duration;
 
-        // Check if the room has expired
-        if (Date.now() - roomCreationTime >= roomDuration * 60000) {
-          // Room has expired, delete it from Firebase
-          remove(ref(database, 'rooms/' + roomId));
-        }
-      });
-    }
-  });
+          // Check if the room has expired
+          if (Date.now() - roomCreationTime >= roomDuration * 60000) {
+            // Room has expired, delete it from Firebase
+            remove(ref(database, 'rooms/' + roomId));
+          }
+        });
+      }
+    })
+    .catch((error) => console.error("Error checking rooms:", error));
 }
 
 // Call this function periodically (e.g., every minute)
 setInterval(checkAndDeleteExpiredRooms, 60000); // Every minute
+// Toggle fields based on room type
+document.getElementById("room-type").addEventListener("change", (event) => {
+  const roomType = event.target.value;
+  if (roomType === "public") {
+    document.getElementById("public-room-fields").style.display = "block";
+    document.getElementById("private-room-fields").style.display = "none";
+  } else if (roomType === "private") {
+    document.getElementById("public-room-fields").style.display = "none";
+    document.getElementById("private-room-fields").style.display = "block";
+  }
+});
 
 // Event listener to create a room when the "Create Room" button is clicked
-document.getElementById("create-room").addEventListener("click", () => {
-  const roomType = document.getElementById("room-type").value;
-  const roomDuration = parseInt(document.getElementById("room-duration").value.trim()); // Get room duration (in minutes)
+document.getElementById("create-room").addEventListener("click", (event) => {
+  event.preventDefault(); // Prevent default form submission
+  try {
+    const roomType = document.getElementById("room-type").value;
+    const roomDuration = parseInt(document.getElementById("room-duration").value.trim()); // Get room duration (in minutes)
 
-  if (roomDuration > 0) {
-    if (roomType === "public") {
-      const publicRoomName = document.getElementById("public-room-name").value.trim();
-      if (publicRoomName) {
-        // Check if the room name already exists
-        const roomRef = ref(database, `rooms/${publicRoomName}`);
-        get(roomRef).then((snapshot) => {
-          if (snapshot.exists()) {
-            alert("A public room with this name already exists. Please choose a different name.");
-          } else {
-            createRoomInDatabase(publicRoomName, roomDuration, "public");
-            createChatOverlay(publicRoomName, roomDuration); // Start the chat
-          }
-        });
-      } else {
-        alert("Please enter a valid room name.");
+    if (roomDuration > 0) {
+      if (roomType === "public") {
+        const publicRoomName = document.getElementById("public-room-name").value.trim();
+        if (publicRoomName) {
+          const roomRef = ref(database, `rooms/${publicRoomName}`);
+          get(roomRef)
+            .then((snapshot) => {
+              if (snapshot.exists()) {
+                alert("A public room with this name already exists. Please choose a different name.");
+              } else {
+                return createRoomInDatabase(publicRoomName, roomDuration, "public");
+              }
+            })
+            .then(() => {
+              createChatOverlay(publicRoomName, roomDuration); // Start the chat
+            })
+            .catch((error) => console.error("Error creating public room:", error));
+        } else {
+          alert("Please enter a valid room name.");
+        }
+      } else if (roomType === "private") {
+        const roomId = generateRoomId(); // Generate a random room ID
+        const password = document.getElementById("private-room-password").value.trim();
+        if (password) {
+          createRoomInDatabase(roomId, roomDuration, "private", password)
+            .then(() => {
+              createChatOverlay(roomId, roomDuration); // Start the chat
+            })
+            .catch((error) => console.error("Error creating private room:", error));
+        } else {
+          alert("Please enter a password for the private room.");
+        }
       }
-    } else if (roomType === "private") {
-      const roomId = generateRoomId(); // Generate a random room ID
-      const password = document.getElementById("private-room-password").value.trim();
-      if (password) {
-        createRoomInDatabase(roomId, roomDuration, "private", password);
-        createChatOverlay(roomId, roomDuration); // Start the chat
-      } else {
-        alert("Please enter a password for the private room.");
-      }
+    } else {
+      alert("Please enter a valid room duration.");
     }
-  } else {
-    alert("Please enter a valid room duration.");
+  } catch (error) {
+    console.error("Error creating room:", error);
   }
 });
 
 // Event listener to join a room when the "Join Room" button is clicked
-document.getElementById("join-room-button").addEventListener("click", () => {
+document.getElementById("join-room-button").addEventListener("click", (event) => {
+  event.preventDefault(); // Prevent default form submission
   const roomIdOrName = document.getElementById("join-room-id").value.trim();
 
   if (roomIdOrName) {
     const roomRef = ref(database, `rooms/${roomIdOrName}`);
-    get(roomRef).then((snapshot) => {
-      if (snapshot.exists()) {
-        const room = snapshot.val();
-        if (room.type === "private") {
-          const password = prompt("This is a private room. Please enter the password:");
-          if (password === room.password) {
-            createChatOverlay(room.roomId, room.duration); // Join the private chat
+    get(roomRef)
+      .then((snapshot) => {
+        if (snapshot.exists()) {
+          const room = snapshot.val();
+          if (room.type === "private") {
+            const password = prompt("This is a private room. Please enter the password:");
+            if (password === room.password) {
+              createChatOverlay(room.roomId, room.duration); // Join the private chat
+            } else {
+              alert("Incorrect password. Access denied.");
+            }
           } else {
-            alert("Incorrect password. Access denied.");
+            createChatOverlay(room.roomId, room.duration); // Join the public chat
           }
         } else {
-          createChatOverlay(room.roomId, room.duration); // Join the public chat
+          alert("Room not found or has expired.");
         }
-      } else {
-        alert("Room not found or has expired.");
-      }
-    }).catch((error) => {
-      console.error("Error joining room:", error);
-    });
+      })
+      .catch((error) => console.error("Error joining room:", error));
   } else {
     alert("Please enter a valid Room ID or Name.");
   }
